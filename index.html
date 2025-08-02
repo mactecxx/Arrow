@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Archery Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: url('https://images.unsplash.com/photo-1508614884203-4e8ef466b810') no-repeat center center fixed;
+      background-size: cover;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let target = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 100,
+    angle: 0,
+    shape: "8"
+  };
+
+  let arrowImg = new Image();
+  arrowImg.src = "arrow.png";
+
+  let arrows = [];
+  let score = 0;
+
+  document.addEventListener("click", (e) => {
+    arrows.push({
+      x: canvas.width / 2,
+      y: canvas.height,
+      targetX: e.clientX,
+      targetY: e.clientY,
+      frame: 0
+    });
+  });
+
+  function drawTarget() {
+    const { x, y, radius } = target;
+
+    for (let i = 4; i > 0; i--) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius * i * 0.25, 0, Math.PI * 2);
+      ctx.fillStyle = ["#FFD700", "#FF0000", "#0000FF", "#FFFFFF"][i - 1];
+      ctx.fill();
+    }
+  }
+
+  function updateTarget() {
+    const t = Date.now() / 1000;
+    const a = 100 * Math.sin(t);
+    const b = 100 * Math.sin(2 * t);
+    target.x = canvas.width / 2 + a;
+    target.y = canvas.height / 3 + b;
+  }
+
+  function drawArrow(arrow) {
+    const dx = arrow.targetX - arrow.x;
+    const dy = arrow.targetY - arrow.y;
+    const angle = Math.atan2(dy, dx);
+
+    ctx.save();
+    ctx.translate(arrow.x, arrow.y);
+    ctx.rotate(angle);
+    ctx.drawImage(arrowImg, -15, -5, 50, 10);
+    ctx.restore();
+  }
+
+  function updateGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updateTarget();
+    drawTarget();
+
+    for (let i = arrows.length - 1; i >= 0; i--) {
+      let a = arrows[i];
+      const dx = a.targetX - a.x;
+      const dy = a.targetY - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const speed = 10;
+
+      if (dist < speed) {
+        const hitDist = Math.sqrt((target.x - a.x) ** 2 + (target.y - a.y) ** 2);
+        if (hitDist < target.radius * 0.25) score += 10;
+        else if (hitDist < target.radius * 0.5) score += 9;
+        else if (hitDist < target.radius * 0.75) score += 5;
+        else if (hitDist < target.radius) score += 2;
+        arrows.splice(i, 1);
+        continue;
+      }
+
+      a.x += (dx / dist) * speed;
+      a.y += (dy / dist) * speed;
+      drawArrow(a);
+    }
+
+    ctx.fillStyle = "white";
+    ctx.font = "24px Arial";
+    ctx.fillText("Score: " + score, 20, 40);
+
+    requestAnimationFrame(updateGame);
+  }
+
+  arrowImg.onload = () => {
+    updateGame();
+  };
+</script>
+</body>
+</html>
